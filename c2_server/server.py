@@ -33,6 +33,9 @@ class Colors:
 
 # --- C2 Logic -------------------------------------------------------------
 
+class ReusableHTTPServer(http.server.HTTPServer):
+    allow_reuse_address = True
+
 class AegisC2Handler(http.server.BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         # Suppress default logging to keep CLI clean
@@ -136,7 +139,15 @@ def run_server(port=443):
     print(f"{Colors.GREEN}[+] Starting C2 Server on port {port}...{Colors.ENDC}")
 
     server_address = ('0.0.0.0', port)
-    httpd = http.server.HTTPServer(server_address, AegisC2Handler)
+
+    try:
+        httpd = ReusableHTTPServer(server_address, AegisC2Handler)
+    except OSError as e:
+        if e.errno == 98: # Address already in use
+            print(f"{Colors.FAIL}[!] Error: Port {port} is already in use. C2 Server thread failed to bind.{Colors.ENDC}")
+            return
+        else:
+            raise e
 
     # Wrap with SSL
     context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
