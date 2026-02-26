@@ -138,8 +138,14 @@ static aegis_result_t tls_connect(tls_conn_t *conn, const char *host,
   /* Force TLS 1.3 minimum */
   SSL_CTX_set_min_proto_version(conn->ssl_ctx, TLS1_3_VERSION);
 
-  /* Disable certificate verification for self-signed C2 */
-  SSL_CTX_set_verify(conn->ssl_ctx, SSL_VERIFY_NONE, NULL);
+  /* Set verification based on configuration */
+  #if defined(AEGIS_C2_SKIP_SSL_VERIFY) && AEGIS_C2_SKIP_SSL_VERIFY == 1
+    SSL_CTX_set_verify(conn->ssl_ctx, SSL_VERIFY_NONE, NULL);
+  #else
+    /* Use default verification (load system CA store) */
+    SSL_CTX_set_default_verify_paths(conn->ssl_ctx);
+    SSL_CTX_set_verify(conn->ssl_ctx, SSL_VERIFY_PEER, NULL);
+  #endif
 
   /* Disable session caching (OPSEC: prevents session ticket disclosure) */
   SSL_CTX_set_session_cache_mode(conn->ssl_ctx, SSL_SESS_CACHE_OFF);
