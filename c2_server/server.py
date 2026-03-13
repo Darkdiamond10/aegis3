@@ -137,9 +137,9 @@ def run_server(port=443):
     httpd = http.server.HTTPServer(server_address, AegisC2Handler)
 
     # Wrap with SSL
-    httpd.socket = ssl.wrap_socket(httpd.socket,
-                                 certfile='./server.pem',
-                                 server_side=True)
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    context.load_cert_chain(certfile='./server.pem')
+    httpd.socket = context.wrap_socket(httpd.socket, server_side=True)
 
     while SERVER_RUNNING:
         try:

